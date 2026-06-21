@@ -48,6 +48,11 @@ if _HAS_PYDANTIC_SETTINGS:
         openai_api_key: str = ""
         tavily_api_key: str = ""
 
+        # ---- ServiceNow CMDB (optional; offline fixture used if unset) ----
+        snow_instance_url: str = ""
+        snow_username: str = ""
+        snow_password: str = ""
+
         # ---- Model selection ----
         csai_llm_model: str = "gpt-4o-mini"
         csai_embedding_model: str = "text-embedding-3-small"
@@ -66,6 +71,15 @@ if _HAS_PYDANTIC_SETTINGS:
         @property
         def has_tavily(self) -> bool:
             return bool(self.tavily_api_key) and not self.csai_offline
+
+        @property
+        def has_servicenow(self) -> bool:
+            return (
+                bool(self.snow_instance_url)
+                and bool(self.snow_username)
+                and bool(self.snow_password)
+                and not self.csai_offline
+            )
 
         @property
         def offline(self) -> bool:
@@ -89,6 +103,7 @@ if _HAS_PYDANTIC_SETTINGS:
                 "embedding_model": self.csai_embedding_model,
                 "openai_configured": bool(self.openai_api_key),
                 "tavily_configured": bool(self.tavily_api_key),
+                "servicenow_configured": bool(self.snow_instance_url),
                 "offline_mode": self.offline,
                 "temperature": self.csai_temperature,
             }
@@ -99,6 +114,9 @@ else:  # pragma: no cover - fallback if pydantic-settings is unavailable
         def __init__(self) -> None:
             self.openai_api_key = os.getenv("OPENAI_API_KEY", "")
             self.tavily_api_key = os.getenv("TAVILY_API_KEY", "")
+            self.snow_instance_url = os.getenv("SNOW_INSTANCE_URL", "")
+            self.snow_username = os.getenv("SNOW_USERNAME", "")
+            self.snow_password = os.getenv("SNOW_PASSWORD", "")
             self.csai_llm_model = os.getenv("CSAI_LLM_MODEL", "gpt-4o-mini")
             self.csai_embedding_model = os.getenv(
                 "CSAI_EMBEDDING_MODEL", "text-embedding-3-small"
@@ -115,6 +133,15 @@ else:  # pragma: no cover - fallback if pydantic-settings is unavailable
         @property
         def has_tavily(self) -> bool:
             return bool(self.tavily_api_key) and not self.csai_offline
+
+        @property
+        def has_servicenow(self) -> bool:
+            return (
+                bool(self.snow_instance_url)
+                and bool(self.snow_username)
+                and bool(self.snow_password)
+                and not self.csai_offline
+            )
 
         @property
         def offline(self) -> bool:
@@ -136,6 +163,7 @@ else:  # pragma: no cover - fallback if pydantic-settings is unavailable
                 "embedding_model": self.csai_embedding_model,
                 "openai_configured": bool(self.openai_api_key),
                 "tavily_configured": bool(self.tavily_api_key),
+                "servicenow_configured": bool(self.snow_instance_url),
                 "offline_mode": self.offline,
                 "temperature": self.csai_temperature,
             }

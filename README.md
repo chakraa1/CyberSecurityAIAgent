@@ -17,6 +17,68 @@ Five specialised agents are orchestrated with **LangGraph**:
 | **Incident Response Agent** | Builds step-by-step action plans (playbooks) from the findings. |
 | **Policy Checker Agent** | Checks the setup against ISO 27001, NIST CSF and SOC 2 and scores compliance. |
 
+## Workflow
+
+```mermaid
+flowchart LR
+    subgraph Inputs
+        H[Hostname]
+        D[Database server name]
+        S[ServiceNow<br/>Application Instance]
+        R[Logs / Code /<br/>Dockerfile / Setup]
+    end
+
+    H --> INV[Asset Inventory<br/>ServiceNow CMDB / offline fixture]
+    D --> INV
+    S --> INV
+    INV --> RES[Resolve all mapped<br/>database servers]
+    RES --> BULK[Bulk Scanner<br/>fan-out per server]
+
+    BULK --> V[Vulnerability Scanner<br/>code / DB / Docker]
+    BULK --> T[Threat Intelligence<br/>CVE + FAISS RAG + Tavily]
+    V --> IR[Incident Response]
+    T --> IR
+
+    R --> LM[Log Monitor]
+    LM -.LangGraph pipeline.-> T
+    T -.-> V
+    V -.-> IR
+    IR -.-> PC[Policy Checker<br/>ISO / NIST / SOC2]
+
+    IR --> REP[Aggregated report<br/>+ severity rollup]
+    PC --> REP
+```
+
+The same workflow is rendered live in the app's **Workflow** tab.
+
+## Bulk scanning (multiple inputs)
+
+The **Bulk scan** tab (and `main.bulk_scanner.BulkScanner`) accepts any
+combination of:
+
+- **Hostnames** — resolves database servers running on / mapped to the host.
+- **Database server names** — scans the named servers directly.
+- **ServiceNow Application Instance(s)** — queries the CMDB for *all* database
+  servers mapped to the application and scans them in bulk.
+
+Resolution is handled by `tools.asset_inventory`. When
+`SNOW_INSTANCE_URL` / `SNOW_USERNAME` / `SNOW_PASSWORD` are configured it queries
+ServiceNow (`cmdb_ci_appl` + `cmdb_rel_ci`); otherwise it uses the bundled
+offline CMDB fixture (`data/cmdb/cmdb.json`). Each resolved server is scanned by
+the Vulnerability Scanner + Threat Intelligence agents and gets an
+Incident Response plan, with a fleet-wide severity rollup.
+
+```python
+from main.bulk_scanner import get_bulk_scanner
+
+report = get_bulk_scanner().run(
+    app_instances=["Core Banking"],
+    hostnames=["app-web-01.corp"],
+    db_servers=["pg-analytics-1"],
+)
+print(report["summary"])  # total_targets, total_findings, worst_severity, ...
+```
+
 ## Tech stack
 
 - **Orchestration:** LangChain / LangGraph

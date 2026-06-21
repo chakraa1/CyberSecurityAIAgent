@@ -44,6 +44,15 @@ Documented in `README.md`. In short: `pip install -r requirements.txt`,
 - **Streamlit run:** launch with `streamlit run app/streamlit_app.py` (config in
   `.streamlit/config.toml` binds `0.0.0.0:8501`, headless). The app inserts the
   project root onto `sys.path` itself, so it can be launched from any CWD.
+- **Bulk scan / CMDB:** `main/bulk_scanner.py` resolves hostnames, database
+  server names and ServiceNow Application Instances to database servers via
+  `tools/asset_inventory.py`. With `SNOW_INSTANCE_URL`/`SNOW_USERNAME`/
+  `SNOW_PASSWORD` set it queries ServiceNow (`cmdb_ci_appl` + `cmdb_rel_ci`);
+  otherwise it uses the offline fixture `data/cmdb/cmdb.json`. The ServiceNow
+  backend falls back to the fixture on any API error, so bulk scans never hard
+  fail. The Streamlit "Workflow" tab renders the architecture via
+  `st.graphviz_chart` (no system Graphviz binary needed — Streamlit ships the
+  renderer).
 - **LangGraph engine:** `SecurityOrchestrator` builds a real `StateGraph`; if
   `langgraph` import/compile ever fails it silently falls back to an equivalent
   sequential pipeline. Check the `engine` field in the orchestrator output to

@@ -30,7 +30,9 @@ from main.agents import (  # noqa: E402
     ThreatIntelligenceAgent,
     VulnerabilityScannerAgent,
 )
+from main.bulk_scanner import get_bulk_scanner  # noqa: E402
 from main.orchestrator import get_orchestrator  # noqa: E402
+from tools.asset_inventory import get_inventory  # noqa: E402
 from tools.log_tools import load_sample_logs  # noqa: E402
 
 configure_logging()
@@ -251,6 +253,146 @@ def tab_evals() -> None:
         )
 
 
+WORKFLOW_DOT = r"""
+digraph CyberSecurityAIAgent {
+    rankdir=LR;
+    fontname="Helvetica";
+    node [fontname="Helvetica", style="filled", shape="box", color="#37474f",
+          fontcolor="white"];
+    edge [color="#90a4ae"];
+
+    subgraph cluster_inputs {
+        label="Inputs"; style="rounded"; color="#90a4ae"; fontcolor="#cfd8dc";
+        host  [label="Hostname", fillcolor="#455a64"];
+        dbname[label="Database server name", fillcolor="#455a64"];
+        snow  [label="ServiceNow\nApplication Instance", fillcolor="#455a64"];
+        logs  [label="Logs / Code /\nDockerfile / Setup", fillcolor="#455a64"];
+    }
+
+    inv  [label="Asset Inventory\n(ServiceNow CMDB / fixture)", fillcolor="#5e35b1"];
+    resolve [label="Resolve mapped\ndatabase servers", fillcolor="#5e35b1"];
+
+    subgraph cluster_agents {
+        label="LangGraph multi-agent pipeline"; style="rounded";
+        color="#90a4ae"; fontcolor="#cfd8dc";
+        logmon [label="Log Monitor", fillcolor="#1565c0"];
+        threat [label="Threat Intelligence\n(CVE + FAISS RAG + Tavily)", fillcolor="#1565c0"];
+        vuln   [label="Vulnerability Scanner\n(code / DB / Docker)", fillcolor="#1565c0"];
+        incident [label="Incident Response", fillcolor="#1565c0"];
+        policy [label="Policy Checker\n(ISO/NIST/SOC2)", fillcolor="#1565c0"];
+    }
+
+    bulk [label="Bulk Scanner\n(scan all servers)", fillcolor="#00897b"];
+    report [label="Aggregated report\n+ severity rollup", fillcolor="#e65100"];
+
+    host -> inv;
+    dbname -> inv;
+    snow -> inv;
+    inv -> resolve -> bulk;
+    bulk -> vuln;
+    bulk -> threat;
+    vuln -> incident;
+    threat -> incident;
+
+    logs -> logmon;
+    logmon -> threat -> vuln -> incident -> policy [style="dashed"];
+
+    incident -> report;
+    policy -> report;
+}
+"""
+
+
+def tab_workflow() -> None:
+    st.subheader("Workflow diagram")
+    st.caption(
+        "How inputs flow through the asset inventory, the bulk scanner and the "
+        "LangGraph multi-agent pipeline to an aggregated report."
+    )
+    st.graphviz_chart(WORKFLOW_DOT, use_container_width=True)
+    with st.expander("Legend"):
+        st.markdown(
+            "- **Inputs**: hostname, database-server name, ServiceNow Application "
+            "Instance, or raw artifacts (logs/code/Dockerfile/setup).\n"
+            "- **Asset Inventory** resolves an Application Instance (or host) to all "
+            "mapped database servers via ServiceNow CMDB (offline fixture fallback).\n"
+            "- **Bulk Scanner** fans out across every resolved server.\n"
+            "- **LangGraph pipeline** (dashed path) is the single-target full scan."
+        )
+
+
+def tab_bulk_scan() -> None:
+    st.subheader("Bulk scan (multiple inputs)")
+    st.caption(
+        "Provide any combination of hostnames, database-server names, or a "
+        "ServiceNow Application Instance. All mapped database servers are resolved "
+        "and scanned in bulk."
+    )
+    inventory = get_inventory()
+    app_options = inventory.list_application_instances()
+
+    col1, col2 = st.columns(2)
+    with col1:
+        app_instances = st.multiselect(
+            "ServiceNow Application Instance(s)", app_options,
+            default=app_options[:1] if app_options else [],
+            help="Queries all database servers mapped to the application in the CMDB.",
+        )
+        hostnames_raw = st.text_area(
+            "Hostnames (one per line)", "app-web-01.corp", height=90,
+        )
+    with col2:
+        db_servers_raw = st.text_area(
+            "Database server names (one per line)", "pg-analytics-1", height=90,
+        )
+        st.caption(f"Inventory source: **{inventory.source}**")
+
+    if st.button("Run bulk scan", type="primary"):
+        hostnames = [h for h in hostnames_raw.splitlines() if h.strip()]
+        db_servers = [d for d in db_servers_raw.splitlines() if d.strip()]
+        with st.spinner("Resolving inventory and scanning all mapped servers..."):
+            report = get_bulk_scanner().run(
+                hostnames=hostnames, db_servers=db_servers, app_instances=app_instances
+            )
+
+        summary = report["summary"]
+        if report["resolved"] == 0:
+            st.warning("No database servers were resolved from the provided inputs.")
+            return
+
+        st.success(
+            f"Resolved & scanned **{summary['total_targets']}** database server(s) "
+            f"({report['source']}) — {summary['total_findings']} findings, "
+            f"worst severity {summary['worst_severity'].upper()}."
+        )
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Servers scanned", summary["total_targets"])
+        c2.metric("Total findings", summary["total_findings"])
+        c3.metric("Worst severity", summary["worst_severity"].upper())
+
+        st.markdown("**Fleet overview**")
+        st.dataframe(
+            [
+                {
+                    "server": t["name"], "engine": t["engine"],
+                    "hostname": t["hostname"], "app_instance": t["app_instance"],
+                    "severity": t["severity"], "findings": t["finding_count"],
+                }
+                for t in report["targets"]
+            ],
+            use_container_width=True,
+        )
+
+        for t in report["targets"]:
+            with st.expander(
+                f"{t['name']} ({t['engine']}) — "
+                f"{t['severity'].upper()} · {t['finding_count']} findings"
+            ):
+                for result in t["results"].values():
+                    render_result(result)
+                    st.divider()
+
+
 def main() -> None:
     st.set_page_config(page_title="CyberSecurityAIAgent", page_icon="🛡️", layout="wide")
     sidebar()
@@ -261,20 +403,24 @@ def main() -> None:
         "compliance — orchestrated with LangGraph."
     )
     tabs = st.tabs([
-        "Full scan", "Log Monitor", "Threat Intel", "Vuln Scanner",
-        "Policy Checker", "Evals & Loop",
+        "Workflow", "Bulk scan", "Full scan", "Log Monitor", "Threat Intel",
+        "Vuln Scanner", "Policy Checker", "Evals & Loop",
     ])
     with tabs[0]:
-        tab_full_scan()
+        tab_workflow()
     with tabs[1]:
-        tab_log_monitor()
+        tab_bulk_scan()
     with tabs[2]:
-        tab_threat_intel()
+        tab_full_scan()
     with tabs[3]:
-        tab_vuln_scanner()
+        tab_log_monitor()
     with tabs[4]:
-        tab_policy()
+        tab_threat_intel()
     with tabs[5]:
+        tab_vuln_scanner()
+    with tabs[6]:
+        tab_policy()
+    with tabs[7]:
         tab_evals()
 
 
