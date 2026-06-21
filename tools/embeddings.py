@@ -51,21 +51,31 @@ class HashingEmbeddings:
 
 
 def get_embeddings():
-    """Return an embeddings object exposing ``embed_documents`` / ``embed_query``."""
+    """Return an embeddings object exposing ``embed_documents`` / ``embed_query``.
+
+    When OpenAI is configured we construct OpenAI embeddings *and run a tiny
+    health probe*. If the probe fails (e.g. an invalid/misconfigured API key or
+    network error) we transparently fall back to the deterministic hashing
+    embeddings. Probing up-front guarantees a single, consistent backend for
+    both indexing and querying (avoiding embedding-dimension mismatches).
+    """
     settings = get_settings()
     if settings.has_openai:
         try:
             from langchain_openai import OpenAIEmbeddings
 
-            logger.info(
-                "Embeddings: using OpenAI '%s'.", settings.csai_embedding_model
-            )
-            return OpenAIEmbeddings(
+            emb = OpenAIEmbeddings(
                 model=settings.csai_embedding_model,
                 api_key=settings.openai_api_key,
             )
-        except Exception as exc:  # pragma: no cover
-            logger.warning("OpenAI embeddings unavailable (%s); using hashing.", exc)
+            # Health probe: confirm the key actually works before committing.
+            emb.embed_query("ping")
+            logger.info("Embeddings: using OpenAI '%s'.", settings.csai_embedding_model)
+            return emb
+        except Exception as exc:
+            logger.warning(
+                "OpenAI embeddings unusable (%s); falling back to hashing.", exc
+            )
     logger.info("Embeddings: using deterministic hashing fallback.")
     return HashingEmbeddings()
 
