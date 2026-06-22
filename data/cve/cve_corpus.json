@@ -1,0 +1,98 @@
+[
+  {
+    "id": "CVE-2021-44228",
+    "alias": "Log4Shell",
+    "product": "Apache Log4j2",
+    "affected_versions": "2.0-beta9 to 2.14.1",
+    "cvss": 10.0,
+    "severity": "critical",
+    "summary": "JNDI features used in configuration, log messages, and parameters do not protect against attacker-controlled LDAP and other JNDI related endpoints, enabling remote code execution.",
+    "remediation": "Upgrade to Log4j 2.17.1+. Set log4j2.formatMsgNoLookups=true as a stop-gap and remove the JndiLookup class.",
+    "references": ["https://nvd.nist.gov/vuln/detail/CVE-2021-44228"],
+    "keywords": ["log4j", "jndi", "rce", "java", "ldap"]
+  },
+  {
+    "id": "CVE-2014-0160",
+    "alias": "Heartbleed",
+    "product": "OpenSSL",
+    "affected_versions": "1.0.1 to 1.0.1f",
+    "cvss": 7.5,
+    "severity": "high",
+    "summary": "The TLS heartbeat extension allows remote attackers to read memory, exposing private keys and secrets.",
+    "remediation": "Upgrade OpenSSL to 1.0.1g+, reissue certificates and rotate secrets.",
+    "references": ["https://nvd.nist.gov/vuln/detail/CVE-2014-0160"],
+    "keywords": ["openssl", "tls", "heartbeat", "memory disclosure"]
+  },
+  {
+    "id": "CVE-2017-5638",
+    "alias": "Struts2 RCE",
+    "product": "Apache Struts",
+    "affected_versions": "2.3.5 to 2.3.31, 2.5 to 2.5.10",
+    "cvss": 10.0,
+    "severity": "critical",
+    "summary": "Jakarta Multipart parser mishandling of Content-Type allows remote code execution via crafted headers.",
+    "remediation": "Upgrade Struts to 2.3.32 or 2.5.10.1+.",
+    "references": ["https://nvd.nist.gov/vuln/detail/CVE-2017-5638"],
+    "keywords": ["struts", "rce", "jakarta", "content-type"]
+  },
+  {
+    "id": "CVE-2019-1547",
+    "alias": "OpenSSL ECDSA",
+    "product": "OpenSSL",
+    "affected_versions": "1.1.1 to 1.1.1c",
+    "cvss": 4.7,
+    "severity": "medium",
+    "summary": "Side-channel that may allow recovery of an ECDSA private key under specific conditions.",
+    "remediation": "Upgrade OpenSSL to 1.1.1d+.",
+    "references": ["https://nvd.nist.gov/vuln/detail/CVE-2019-1547"],
+    "keywords": ["openssl", "ecdsa", "side-channel"]
+  },
+  {
+    "id": "CVE-2022-1471",
+    "alias": "SnakeYAML RCE",
+    "product": "SnakeYAML",
+    "affected_versions": "< 2.0",
+    "cvss": 9.8,
+    "severity": "critical",
+    "summary": "Deserialization of untrusted data via SnakeYAML Constructor can lead to remote code execution.",
+    "remediation": "Upgrade SnakeYAML to 2.0+ and use SafeConstructor.",
+    "references": ["https://nvd.nist.gov/vuln/detail/CVE-2022-1471"],
+    "keywords": ["snakeyaml", "deserialization", "yaml", "rce", "java"]
+  },
+  {
+    "id": "CVE-2023-2650",
+    "alias": "OpenSSL OBJ DoS",
+    "product": "OpenSSL",
+    "affected_versions": "3.0.0 to 3.1.0",
+    "cvss": 7.5,
+    "severity": "high",
+    "summary": "Processing of maliciously crafted ASN.1 OBJECT IDENTIFIERs can cause severe performance degradation (DoS).",
+    "remediation": "Upgrade OpenSSL to 3.1.1+ / 3.0.9+.",
+    "references": ["https://nvd.nist.gov/vuln/detail/CVE-2023-2650"],
+    "keywords": ["openssl", "asn1", "dos"]
+  },
+  {
+    "id": "CVE-2012-2122",
+    "alias": "MySQL Auth Bypass",
+    "product": "MySQL / MariaDB",
+    "affected_versions": "5.1.x, 5.5.x (specific builds)",
+    "cvss": 5.1,
+    "severity": "medium",
+    "summary": "A flaw in password comparison allows authentication bypass when memcmp returns non-standard values, enabling repeated login attempts to succeed.",
+    "remediation": "Patch to fixed MySQL/MariaDB build, restrict network access to the DB port, enforce strong auth.",
+    "references": ["https://nvd.nist.gov/vuln/detail/CVE-2012-2122"],
+    "keywords": ["mysql", "mariadb", "authentication bypass", "database"]
+  },
+  {
+    "id": "CVE-2020-1472",
+    "alias": "Zerologon",
+    "product": "Microsoft Netlogon",
+    "affected_versions": "Windows Server (multiple)",
+    "cvss": 10.0,
+    "severity": "critical",
+    "summary": "Elevation of privilege flaw in Netlogon (MS-NRPC) allows attackers to impersonate domain controllers.",
+    "remediation": "Apply Microsoft August 2020 patches and enforce secure RPC.",
+    "references": ["https://nvd.nist.gov/vuln/detail/CVE-2020-1472"],
+    "keywords": ["netlogon", "zerologon", "privilege escalation", "windows", "mssql"]
+  }
+]

@@ -1,0 +1,28 @@
+# Core orchestration
+langchain>=0.2.0
+langchain-core>=0.2.0
+langchain-community>=0.2.0
+langgraph>=0.1.0
+
+# LLM providers (optional at runtime; only used when API keys are set)
+langchain-openai>=0.1.0
+
+# Vector DB / RAG
+faiss-cpu>=1.7.4
+
+# Web search
+tavily-python>=0.3.0
+
+# UI
+streamlit>=1.30.0
+
+# Config / data / utils
+pydantic>=2.5.0
+pydantic-settings>=2.1.0
+python-dotenv>=1.0.0
+pyyaml>=6.0
+numpy>=1.24.0
+pandas>=2.0.0
+
+# Testing / evals
+pytest>=8.0.0

@@ -1,0 +1,12 @@
+2026-06-21T09:01:12Z sshd[2011]: Accepted password for deploy from 10.0.0.5 port 51544 ssh2
+2026-06-21T09:02:41Z sshd[2044]: Failed password for invalid user admin from 203.0.113.9 port 40512 ssh2
+2026-06-21T09:02:43Z sshd[2044]: Failed password for invalid user admin from 203.0.113.9 port 40514 ssh2
+2026-06-21T09:02:45Z sshd[2044]: Failed password for invalid user admin from 203.0.113.9 port 40516 ssh2
+2026-06-21T09:02:47Z sshd[2044]: Failed password for invalid user root from 203.0.113.9 port 40520 ssh2
+2026-06-21T09:02:49Z sshd[2044]: Failed password for invalid user root from 203.0.113.9 port 40522 ssh2
+2026-06-21T09:02:51Z sshd[2044]: Failed password for invalid user root from 203.0.113.9 port 40524 ssh2
+2026-06-21T09:02:53Z sshd[2044]: Failed password for invalid user postgres from 203.0.113.9 port 40526 ssh2
+2026-06-21T09:02:55Z sshd[2044]: Failed password for invalid user oracle from 203.0.113.9 port 40528 ssh2
+2026-06-21T09:03:10Z sudo[2099]:   deploy : TTY=pts/0 ; PWD=/home/deploy ; USER=root ; COMMAND=/usr/bin/apt-get update
+2026-06-21T09:05:22Z sshd[2120]: Accepted publickey for ci from 10.0.0.9 port 51999 ssh2
+2026-06-21T09:09:31Z sudo[2150]:   webapp : user NOT in sudoers ; TTY=pts/2 ; PWD=/var/www ; USER=root ; COMMAND=/bin/bash

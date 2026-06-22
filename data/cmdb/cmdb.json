@@ -1,0 +1,89 @@
+{
+  "database_servers": [
+    {
+      "name": "mysql-prod-1",
+      "hostname": "db-mysql-01.corp",
+      "engine": "mysql",
+      "host": "0.0.0.0",
+      "port": 3306,
+      "ssl": false,
+      "username": "root",
+      "password": "root",
+      "public_access": true,
+      "default_account": false
+    },
+    {
+      "name": "pg-prod-1",
+      "hostname": "db-pg-01.corp",
+      "engine": "postgres",
+      "host": "10.0.2.10",
+      "port": 5432,
+      "ssl": true,
+      "username": "app_user",
+      "password": "S3cure!Rotated#2026",
+      "public_access": false,
+      "default_account": false
+    },
+    {
+      "name": "mssql-fin-1",
+      "hostname": "db-mssql-01.corp",
+      "engine": "mssql",
+      "host": "10.0.2.11",
+      "port": 1433,
+      "ssl": false,
+      "username": "sa",
+      "password": "sa",
+      "public_access": false,
+      "default_account": true
+    },
+    {
+      "name": "oracle-fin-1",
+      "hostname": "db-ora-01.corp",
+      "engine": "oracle",
+      "host": "0.0.0.0",
+      "port": 1521,
+      "ssl": false,
+      "username": "system",
+      "password": "changeme",
+      "public_access": true,
+      "default_account": true
+    },
+    {
+      "name": "pg-analytics-1",
+      "hostname": "db-pg-02.corp",
+      "engine": "postgres",
+      "host": "10.0.3.20",
+      "port": 5432,
+      "ssl": false,
+      "username": "analytics",
+      "password": "analytics",
+      "public_access": false,
+      "default_account": false
+    }
+  ],
+  "hosts": [
+    {"hostname": "db-mysql-01.corp", "database_servers": ["mysql-prod-1"]},
+    {"hostname": "db-pg-01.corp", "database_servers": ["pg-prod-1"]},
+    {"hostname": "db-mssql-01.corp", "database_servers": ["mssql-fin-1"]},
+    {"hostname": "db-ora-01.corp", "database_servers": ["oracle-fin-1"]},
+    {"hostname": "db-pg-02.corp", "database_servers": ["pg-analytics-1"]},
+    {"hostname": "app-web-01.corp", "database_servers": ["mysql-prod-1", "pg-prod-1"]}
+  ],
+  "application_instances": [
+    {
+      "name": "CRM Production",
+      "sys_id": "a1b2c3d4crmprod",
+      "database_servers": ["mysql-prod-1", "pg-prod-1"]
+    },
+    {
+      "name": "Core Banking",
+      "sys_id": "e5f6g7h8corebank",
+      "database_servers": ["mssql-fin-1", "oracle-fin-1", "pg-prod-1"]
+    },
+    {
+      "name": "Analytics Platform",
+      "sys_id": "i9j0k1l2analytics",
+      "database_servers": ["pg-analytics-1"]
+    }
+  ]
+}
