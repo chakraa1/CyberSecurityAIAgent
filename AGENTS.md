@@ -35,6 +35,16 @@ Documented in `README.md`. In short: `pip install -r requirements.txt`,
   local corpus) all degrade gracefully. This is intentional and required for the
   eval suite to be reproducible. Set keys in a `.env` file (see `.env.example`)
   or Streamlit secrets to enable live LLM/web-search; no code change needed.
+- **Provider keys & OpenRouter:** the app reads `OPENAI_API_KEY` / `TAVILY_API_KEY`
+  from the process environment (Cloud secrets) or a local `.env`
+  (`pydantic-settings`; OS env overrides `.env`). OpenRouter keys (`sk-or-...`)
+  are auto-detected — `config.settings.resolve_llm_endpoint` points the base URL
+  at `openrouter.ai` and namespaces the model as `openai/<model>`. Override the
+  endpoint with `CSAI_LLM_BASE_URL`. OpenRouter has no embeddings API, so RAG
+  embeddings use the deterministic hashing fallback in that case (FAISS still
+  works). Gotcha: a long-lived shell/tmux server can hold a *stale* key in its
+  env that overrides `.env`; start the app from a shell with the current secret
+  (or rely on `.env`) if live mode unexpectedly 401s.
 - **Eval determinism:** `evals/datasets/security_cases.json` is tuned to pass
   100% in offline mode. The loop-engineering demo
   (`ImprovementLoop.demo_threshold_sweep`) mutates the global brute-force
