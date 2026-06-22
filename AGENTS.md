@@ -33,18 +33,21 @@ Documented in `README.md`. In short: `pip install -r requirements.txt`,
   runs in deterministic mode — the LLM factory (`main/llm.py`), embeddings
   (`tools/embeddings.py` hashing fallback) and web search (`tools/websearch.py`
   local corpus) all degrade gracefully. This is intentional and required for the
-  eval suite to be reproducible. Set keys in a `.env` file (see `.env.example`)
-  or Streamlit secrets to enable live LLM/web-search; no code change needed.
-- **Provider keys & OpenRouter:** the app reads `OPENAI_API_KEY` / `TAVILY_API_KEY`
-  from the process environment (Cloud secrets) or a local `.env`
-  (`pydantic-settings`; OS env overrides `.env`). OpenRouter keys (`sk-or-...`)
-  are auto-detected — `config.settings.resolve_llm_endpoint` points the base URL
-  at `openrouter.ai` and namespaces the model as `openai/<model>`. Override the
-  endpoint with `CSAI_LLM_BASE_URL`. OpenRouter has no embeddings API, so RAG
-  embeddings use the deterministic hashing fallback in that case (FAISS still
-  works). Gotcha: a long-lived shell/tmux server can hold a *stale* key in its
-  env that overrides `.env`; start the app from a shell with the current secret
-  (or rely on `.env`) if live mode unexpectedly 401s.
+  eval suite to be reproducible. Set keys in `config/.env` (see
+  `config/.env.example`) or Streamlit secrets to enable live LLM/web-search; no
+  code change needed.
+- **Provider keys & endpoint:** the dotenv file is `config/.env` (loaded by
+  `pydantic-settings`; OS env overrides `.env`). The LLM endpoint is pure
+  configuration: `CSAI_LLM_BASE_URL` (default in `config/.env` targets
+  OpenRouter) + `CSAI_LLM_MODEL` (e.g. `openai/gpt-4o-mini` for OpenRouter).
+  `config.settings.resolve_llm_endpoint` just returns `(base_url, model)` from
+  settings — no provider URL is hard-coded in code. For OpenRouter, set
+  `CSAI_LLM_MODEL=openai/<model>`; for the OpenAI API, blank `CSAI_LLM_BASE_URL`
+  and use a bare model id. OpenRouter has no embeddings API, so RAG embeddings
+  use the deterministic hashing fallback (FAISS still works). Gotcha: a
+  long-lived shell/tmux server can hold a *stale* key that overrides
+  `config/.env`; start the app from a shell with the current secret (or rely on
+  `config/.env`) if live mode unexpectedly 401s.
 - **Eval determinism:** `evals/datasets/security_cases.json` is tuned to pass
   100% in offline mode. The loop-engineering demo
   (`ImprovementLoop.demo_threshold_sweep`) mutates the global brute-force

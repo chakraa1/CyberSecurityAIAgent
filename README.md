@@ -109,7 +109,7 @@ tests/    # unit + integration tests
 ```bash
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env            # optional: add OPENAI_API_KEY / TAVILY_API_KEY
+cp config/.env.example config/.env   # optional: add OPENAI_API_KEY / TAVILY_API_KEY
 
 # Run the UI
 streamlit run app/streamlit_app.py
@@ -123,9 +123,15 @@ pytest
 
 ## Configuration
 
-All settings are environment-driven (see `.env.example`). Key flags:
+All settings are environment-driven and loaded from `config/.env` (see
+`config/.env.example`). Key flags:
 
-- `OPENAI_API_KEY` — enables live LLM reasoning + OpenAI embeddings.
+- `OPENAI_API_KEY` — LLM provider key (OpenAI `sk-...` or OpenRouter `sk-or-...`).
+- `CSAI_LLM_BASE_URL` — OpenAI-compatible endpoint (default targets OpenRouter;
+  set blank for the OpenAI API). The endpoint URL is configuration only — it is
+  not hard-coded anywhere in the code.
+- `CSAI_LLM_MODEL` — model id for that endpoint (e.g. `openai/gpt-4o-mini` for
+  OpenRouter, `gpt-4o-mini` for OpenAI).
 - `TAVILY_API_KEY` — enables live web search.
 - `CSAI_OFFLINE=true` — force deterministic offline mode (useful for evals).
 

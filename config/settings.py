@@ -24,7 +24,13 @@ except Exception:  # pragma: no cover - extremely defensive fallback
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
+CONFIG_DIR = Path(__file__).resolve().parent
 DATA_DIR = PROJECT_ROOT / "data"
+
+# The dotenv file lives inside the config/ folder. The LLM base URL/model are
+# configuration sourced from this file (CSAI_LLM_BASE_URL / CSAI_LLM_MODEL); no
+# provider-specific endpoint constant is hard-coded in the codebase.
+ENV_FILE = CONFIG_DIR / ".env"
 
 
 if _HAS_PYDANTIC_SETTINGS:
@@ -38,7 +44,7 @@ if _HAS_PYDANTIC_SETTINGS:
         """
 
         model_config = SettingsConfigDict(
-            env_file=str(PROJECT_ROOT / ".env"),
+            env_file=str(ENV_FILE),
             env_file_encoding="utf-8",
             extra="ignore",
             case_sensitive=False,
@@ -56,8 +62,9 @@ if _HAS_PYDANTIC_SETTINGS:
         # ---- Model selection ----
         csai_llm_model: str = "gpt-4o-mini"
         csai_embedding_model: str = "text-embedding-3-small"
-        # Optional OpenAI-compatible base URL (e.g. OpenRouter, Azure, local).
-        # Read from CSAI_LLM_BASE_URL or the canonical OPENAI_BASE_URL.
+        # OpenAI-compatible base URL, sourced from CSAI_LLM_BASE_URL in
+        # config/.env (default there points at OpenRouter). OPENAI_BASE_URL is an
+        # optional secondary override. No endpoint URL is hard-coded in code.
         csai_llm_base_url: str = ""
         openai_base_url: str = ""
 
@@ -116,6 +123,12 @@ else:  # pragma: no cover - fallback if pydantic-settings is unavailable
 
     class Settings:  # type: ignore[no-redef]
         def __init__(self) -> None:
+            try:
+                from dotenv import load_dotenv
+
+                load_dotenv(ENV_FILE)
+            except Exception:
+                pass
             self.openai_api_key = os.getenv("OPENAI_API_KEY", "")
             self.tavily_api_key = os.getenv("TAVILY_API_KEY", "")
             self.snow_instance_url = os.getenv("SNOW_INSTANCE_URL", "")
@@ -175,30 +188,19 @@ else:  # pragma: no cover - fallback if pydantic-settings is unavailable
             }
 
 
-OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
-
-
 def resolve_llm_endpoint(settings: "Settings") -> tuple[str, str]:
-    """Resolve the effective (base_url, model) for the chat LLM.
+    """Resolve the effective ``(base_url, model)`` for the chat LLM.
 
-    Precedence for the base URL: explicit ``CSAI_LLM_BASE_URL`` →
-    ``OPENAI_BASE_URL`` → auto-detected OpenRouter (when the key looks like an
-    ``sk-or-`` OpenRouter key) → "" (default OpenAI endpoint).
+    Both values are pure configuration, sourced from ``config/.env``:
+    * base URL: ``CSAI_LLM_BASE_URL`` (preferred) or ``OPENAI_BASE_URL``;
+    * model: ``CSAI_LLM_MODEL``.
 
-    For OpenRouter, un-namespaced model names (e.g. ``gpt-4o-mini``) are
-    prefixed with ``openai/`` so they resolve correctly.
+    No provider-specific endpoint is hard-coded; point ``CSAI_LLM_BASE_URL`` at
+    OpenRouter / Azure / a local gateway as needed (and set ``CSAI_LLM_MODEL``
+    to the id that backend expects, e.g. ``openai/gpt-4o-mini`` for OpenRouter).
     """
     base_url = (settings.csai_llm_base_url or settings.openai_base_url or "").strip()
-    model = settings.csai_llm_model
-
-    key = (settings.openai_api_key or "").strip()
-    is_openrouter = key.startswith("sk-or-") or "openrouter.ai" in base_url
-    if is_openrouter:
-        if not base_url:
-            base_url = OPENROUTER_BASE_URL
-        if "/" not in model:
-            model = f"openai/{model}"
-    return base_url, model
+    return base_url, settings.csai_llm_model
 
 
 @lru_cache(maxsize=1)
