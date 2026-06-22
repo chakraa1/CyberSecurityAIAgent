@@ -56,6 +56,10 @@ if _HAS_PYDANTIC_SETTINGS:
         # ---- Model selection ----
         csai_llm_model: str = "gpt-4o-mini"
         csai_embedding_model: str = "text-embedding-3-small"
+        # Optional OpenAI-compatible base URL (e.g. OpenRouter, Azure, local).
+        # Read from CSAI_LLM_BASE_URL or the canonical OPENAI_BASE_URL.
+        csai_llm_base_url: str = ""
+        openai_base_url: str = ""
 
         # ---- Behaviour ----
         csai_offline: bool = False
@@ -121,6 +125,8 @@ else:  # pragma: no cover - fallback if pydantic-settings is unavailable
             self.csai_embedding_model = os.getenv(
                 "CSAI_EMBEDDING_MODEL", "text-embedding-3-small"
             )
+            self.csai_llm_base_url = os.getenv("CSAI_LLM_BASE_URL", "")
+            self.openai_base_url = os.getenv("OPENAI_BASE_URL", "")
             self.csai_offline = os.getenv("CSAI_OFFLINE", "false").lower() == "true"
             self.csai_temperature = float(os.getenv("CSAI_TEMPERATURE", "0.1"))
             self.csai_index_dir = os.getenv("CSAI_INDEX_DIR", ".cache/faiss_index")
@@ -167,6 +173,32 @@ else:  # pragma: no cover - fallback if pydantic-settings is unavailable
                 "offline_mode": self.offline,
                 "temperature": self.csai_temperature,
             }
+
+
+OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+
+
+def resolve_llm_endpoint(settings: "Settings") -> tuple[str, str]:
+    """Resolve the effective (base_url, model) for the chat LLM.
+
+    Precedence for the base URL: explicit ``CSAI_LLM_BASE_URL`` →
+    ``OPENAI_BASE_URL`` → auto-detected OpenRouter (when the key looks like an
+    ``sk-or-`` OpenRouter key) → "" (default OpenAI endpoint).
+
+    For OpenRouter, un-namespaced model names (e.g. ``gpt-4o-mini``) are
+    prefixed with ``openai/`` so they resolve correctly.
+    """
+    base_url = (settings.csai_llm_base_url or settings.openai_base_url or "").strip()
+    model = settings.csai_llm_model
+
+    key = (settings.openai_api_key or "").strip()
+    is_openrouter = key.startswith("sk-or-") or "openrouter.ai" in base_url
+    if is_openrouter:
+        if not base_url:
+            base_url = OPENROUTER_BASE_URL
+        if "/" not in model:
+            model = f"openai/{model}"
+    return base_url, model
 
 
 @lru_cache(maxsize=1)

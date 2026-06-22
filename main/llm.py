@@ -134,12 +134,22 @@ def get_chat_model(force_offline: bool = False) -> Any:
     try:
         from langchain_openai import ChatOpenAI
 
-        model = ChatOpenAI(
-            model=settings.csai_llm_model,
+        from config.settings import resolve_llm_endpoint
+
+        base_url, model_name = resolve_llm_endpoint(settings)
+        kwargs = dict(
+            model=model_name,
             temperature=settings.csai_temperature,
             api_key=settings.openai_api_key,
         )
-        logger.info("LLM: using live ChatOpenAI model '%s'.", settings.csai_llm_model)
+        if base_url:
+            kwargs["base_url"] = base_url
+        model = ChatOpenAI(**kwargs)
+        logger.info(
+            "LLM: using live ChatOpenAI model '%s'%s.",
+            model_name,
+            f" via {base_url}" if base_url else "",
+        )
         _CACHED_MODEL = ChatModelWrapper(model)
     except Exception as exc:  # pragma: no cover - import/credential errors
         logger.warning("Could not init ChatOpenAI (%s); using fallback.", exc)

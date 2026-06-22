@@ -60,6 +60,11 @@ def get_embeddings():
     both indexing and querying (avoiding embedding-dimension mismatches).
     """
     settings = get_settings()
+    # OpenRouter (sk-or-*) keys don't expose an embeddings endpoint; skip the
+    # guaranteed-to-fail probe and use the deterministic hashing embeddings.
+    if (settings.openai_api_key or "").strip().startswith("sk-or-"):
+        logger.info("Embeddings: OpenRouter key detected; using hashing fallback.")
+        return HashingEmbeddings()
     if settings.has_openai:
         try:
             from langchain_openai import OpenAIEmbeddings
